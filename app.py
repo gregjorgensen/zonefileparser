@@ -6,6 +6,8 @@ import socket
 import ssl
 import requests
 from datetime import datetime
+import spf  # For SPF parsing
+import dkim  # For DKIM parsing
 
 app = Flask(__name__)
 
@@ -34,14 +36,14 @@ def get_record_explanation(record_type, records, discrepancies=None):
             # DMARC Detection
             if re.search(r'v=DMARC1', record, re.IGNORECASE):
                 record_explanation += f"DMARC Record: \"{record}\". DMARC helps prevent email spoofing.\n"
-                # Extract DMARC specific components
-                if "p=" in record:
-                    policy = re.search(r'p=([a-zA-Z]+)', record)
-                    if policy:
-                        policy_str = policy.group(1).upper()
-                        highlighted_info.append(f"DMARC Policy: {policy_str}")
-                        record_explanation += f"DMARC Policy is set to {policy_str}, which defines how receiving mail servers should handle emails that fail authentication.\n"
-                # The detection of DMARC service providers will be handled separately
+                # Parse DMARC record
+                parsed_dmarc = parse_dmarc_record(record)
+                if parsed_dmarc:
+                    policy = parsed_dmarc.get('p', '').upper()
+                    highlighted_info.append(f"DMARC Policy: {policy}")
+                    record_explanation += f"DMARC Policy is set to {policy}, which defines how receiving mail servers should handle emails that fail authentication.\n"
+                else:
+                    record_explanation += "Unable to parse DMARC record.\n"
             # SPF Detection
             elif re.search(r'v=spf1', record, re.IGNORECASE):
                 record_explanation += f"SPF Record: \"{record}\". SPF specifies authorized mail servers.\n"
@@ -74,11 +76,33 @@ def get_record_explanation(record_type, records, discrepancies=None):
             elif re.search(r'v=DKIM1', record, re.IGNORECASE):
                 record_explanation += f"DKIM Record: \"{record}\". DKIM verifies the authenticity of your emails.\n"
                 highlighted_info.append("DKIM Record Found")
+                # Parse DKIM record
+                try:
+                    parsed_dkim = dkim.parse_tag_value(record.encode())
+                    if 'p' in parsed_dkim:
+                        record_explanation += "DKIM public key found.\n"
+                    else:
+                        record_explanation += "DKIM record is missing the public key ('p' tag).\n"
+                except Exception as e:
+                    record_explanation += f"Error parsing DKIM record: {str(e)}\n"
             # Other TXT Records
             else:
                 record_explanation += f"General TXT Record: \"{record}\".\n"
             explanations.append(record_explanation.strip())
     return "\n".join(explanations), highlighted_info
+
+# Function to parse DMARC record using regex
+def parse_dmarc_record(record):
+    record = record.strip()
+    if not record.startswith('v=DMARC1'):
+        return None
+    tags = {}
+    tag_pairs = record.split(';')
+    for pair in tag_pairs:
+        if '=' in pair:
+            key, value = pair.strip().split('=', 1)
+            tags[key.strip()] = value.strip()
+    return tags
 
 # Function to detect email security tools based on MX records
 def detect_email_security_tools(mx_records):
@@ -134,7 +158,7 @@ def detect_email_security_tools(mx_records):
             unknown_providers.append(mx_host)
     return list(set(detected_tools)), unknown_providers  # Return both known and unknown providers
 
-# New function to detect DMARC service providers
+# Function to detect DMARC service providers
 def detect_dmarc_providers(txt_records):
     # Known DMARC service providers
     service_providers = {
@@ -283,8 +307,58 @@ def perform_dns_lookup(domain, record_type):
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
 
+# Function to analyze SPF record and count DNS lookups
+def analyze_spf_record(spf_record):
+    try:
+        # Parse the SPF record
+        dns_lookups = 0
+        mechanisms = spf_record.split()
+        for mech in mechanisms:
+            if mech.startswith(('include:', 'a', 'mx', 'ptr', 'exists', 'redirect=')):
+                dns_lookups += 1
+            elif mech.startswith('ip4:') or mech.startswith('ip6:') or mech == 'all':
+                continue  # These do not cause DNS lookups
+        return dns_lookups
+    except Exception as e:
+        return None
+
+# Function to analyze DKIM records using dkimpy
+def analyze_dkim_records(domain):
+    selectors = ['default', 'selector1', 'selector2', 'google', 'smtp', 'mail']
+    dkim_records = []
+    valid_dkim_found = False
+    for selector in selectors:
+        dkim_domain = f"{selector}._domainkey.{domain}"
+        try:
+            answers = resolver_cloudflare.resolve(dkim_domain, 'TXT')
+            for rdata in answers:
+                record = rdata.to_text().strip('"')
+                # Parse the DKIM record
+                parsed_record = dkim.parse_tag_value(record.encode())
+                if 'p' in parsed_record:
+                    valid_dkim_found = True
+                    dkim_records.append((dkim_domain, parsed_record))
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.exception.Timeout):
+            continue
+    return valid_dkim_found, dkim_records
+
+# Function to analyze DMARC record
+def analyze_dmarc_record(domain):
+    dmarc_domain = f"_dmarc.{domain}"
+    try:
+        answers = resolver_cloudflare.resolve(dmarc_domain, 'TXT')
+        for rdata in answers:
+            record = rdata.to_text().strip('"')
+            # Parse the DMARC record
+            parsed_record = parse_dmarc_record(record)
+            if parsed_record:
+                return parsed_record
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.exception.Timeout):
+        return None
+    return None
+
 # Function to calculate the security score
-def calculate_security_score(results):
+def calculate_security_score(results, domain):
     score = 0
     max_score = 4  # Updated maximum score
     dmarc_status = "Not Found"
@@ -292,54 +366,48 @@ def calculate_security_score(results):
     dkim_status = "Not Found"
 
     # Check for DMARC record
-    dmarc_found = False
-    if "TXT" in results and "cloudflare" in results["TXT"]:
-        txt_records = results["TXT"]["cloudflare"]
-        for record in txt_records:
-            if re.search(r'v=DMARC1', record, re.IGNORECASE):
-                dmarc_found = True
-                policy_match = re.search(r'p=([a-zA-Z]+)', record, re.IGNORECASE)
-                if policy_match:
-                    policy = policy_match.group(1).lower()
-                    if policy == "reject":
-                        score += 2  # Full points for p=reject
-                        dmarc_status = "Policy set to reject (Good)"
-                    elif policy in ["quarantine", "none"]:
-                        score += 1  # Partial points for other policies
-                        dmarc_status = f"Policy set to {policy} (Could be improved)"
-                    else:
-                        dmarc_status = "Policy not recognized"
-                else:
-                    dmarc_status = "Policy not found in DMARC record"
-                break  # Stop after finding DMARC record
-    if not dmarc_found:
+    parsed_dmarc_record = analyze_dmarc_record(domain)
+    if parsed_dmarc_record:
+        policy = parsed_dmarc_record.get('p', '').lower()
+        if policy == 'reject':
+            score += 2  # Full points for p=reject
+            dmarc_status = "Policy set to reject (Good)"
+        elif policy in ['quarantine', 'none']:
+            score += 1  # Partial points for other policies
+            dmarc_status = f"Policy set to {policy} (Could be improved)"
+        else:
+            dmarc_status = "Policy not recognized"
+    else:
         dmarc_status = "DMARC Record Not Found"
 
     # Check for SPF record
     spf_found = False
+    dns_lookups = None
+    spf_warning = None
     if "TXT" in results and "cloudflare" in results["TXT"]:
+        txt_records = results["TXT"]["cloudflare"]
         for record in txt_records:
             if re.search(r'v=spf1', record, re.IGNORECASE):
                 score += 1
                 spf_status = "SPF Record Found"
                 spf_found = True
+                # Analyze SPF record for DNS lookups
+                dns_lookups = analyze_spf_record(record)
+                if dns_lookups is not None and dns_lookups > 10:
+                    spf_warning = f"DNS lookup count in your SPF record ({dns_lookups}) exceeds the maximum limit of 10. This can cause SPF authentication failures."
                 break
     if not spf_found:
         spf_status = "SPF Record Not Found"
 
     # Check for DKIM record
-    dkim_found = False
-    if "TXT" in results and "cloudflare" in results["TXT"]:
-        for record in txt_records:
-            if re.search(r'v=DKIM1', record, re.IGNORECASE):
-                score += 1
-                dkim_status = "DKIM Record Found"
-                dkim_found = True
-                break
-    if not dkim_found:
-        dkim_status = "DKIM Record Not Found"
+    dkim_valid, dkim_records = analyze_dkim_records(domain)
+    if dkim_valid:
+        score += 1
+        dkim_status = "DKIM Record Found and Valid"
+    else:
+        dkim_status = "DKIM Record Not Found or Invalid"
 
-    return score, max_score, dmarc_status, spf_status, dkim_status
+    return score, max_score, dmarc_status, spf_status, dkim_status, dns_lookups, spf_warning
 
 @app.route('/')
 def index():
@@ -368,7 +436,7 @@ def lookup():
         results[record_type] = perform_dns_lookup(domain, record_type)
 
     # Calculate security score
-    score, max_score, dmarc_status, spf_status, dkim_status = calculate_security_score(results)
+    score, max_score, dmarc_status, spf_status, dkim_status, dns_lookups, spf_warning = calculate_security_score(results, domain)
 
     # Get domain expiration date and registrar
     expiration_date, registrar = get_domain_info(domain)
@@ -420,7 +488,9 @@ def lookup():
         "website_status": website_status,
         "email_security_tools": email_security_tools,
         "unknown_mx_providers": unknown_mx_providers,
-        "highlighted_info": []
+        "highlighted_info": [],
+        "spf_dns_lookups": dns_lookups,
+        "spf_warning": spf_warning
     }
 
     # Add explanations to the results
