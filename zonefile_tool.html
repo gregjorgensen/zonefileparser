@@ -5,82 +5,27 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Domain Security Analyzer</title>
+    <!-- Import Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Import fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <!-- Include jQuery library -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Font Awesome for icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <style>
-      /* Reset and basic styles */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
+      /* Custom styles */
       body {
         font-family: 'Inter', sans-serif;
         background-color: #f0f4f8;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
+        padding-top: 50px;
       }
 
-      /* Main container */
       .container {
-        background-color: #fff;
-        width: 90%;
-        max-width: 600px;
-        border-radius: 12px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        padding: 40px;
-        text-align: center;
-        position: relative;
+        max-width: 800px;
+        margin: auto;
       }
 
-      /* Input form styles */
-      .form-container {
-        margin-bottom: 30px;
-      }
-
-      label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 10px;
-        font-size: 1.1em;
-      }
-
-      input[type="text"] {
-        padding: 15px;
-        width: 100%;
-        max-width: 400px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        font-size: 1em;
-      }
-
-      button {
-        margin-top: 20px;
-        padding: 15px 30px;
-        background-color: #2f855a; /* Forest green */
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 1em;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-
-      button:hover {
-        background-color: #276749;
-      }
-
-      button:disabled {
-        background-color: #aaa;
-        cursor: not-allowed;
-      }
-
-      /* Status indicator */
       .status-indicator {
         display: inline-block;
         width: 14px;
@@ -91,86 +36,17 @@
       }
 
       .status-green {
-        background-color: #2f855a;
+        background-color: #28a745;
       }
 
       .status-red {
-        background-color: #c53030;
+        background-color: #dc3545;
       }
 
       .status-yellow {
-        background-color: #d69e2e;
+        background-color: #ffc107;
       }
 
-      /* Summary and recommendations */
-      .summary-card, .recommendations-card, .domain-info-card {
-        text-align: left;
-        margin-top: 20px;
-      }
-
-      .summary-card h2, .domain-info-card h3, .recommendations-card h3 {
-        margin-bottom: 15px;
-        color: #2d3748;
-      }
-
-      .summary-card p, .domain-info-card p, .recommendations-card p {
-        margin-bottom: 10px;
-        line-height: 1.6;
-        color: #4a5568;
-      }
-
-      .summary-card ul, .recommendations-card ul {
-        list-style-type: disc;
-        margin-left: 20px;
-      }
-
-      /* Show details button */
-      #show-details-button {
-        margin-top: 30px;
-        padding: 12px 24px;
-        background-color: #2b6cb0; /* Blue color */
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 1em;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-
-      #show-details-button:hover {
-        background-color: #2c5282;
-      }
-
-      /* Detailed results */
-      .results-container {
-        margin-top: 20px;
-        text-align: left;
-        display: none;
-      }
-
-      .record-card {
-        background: #edf2f7;
-        padding: 20px;
-        margin-bottom: 15px;
-        border-radius: 8px;
-      }
-
-      .record-card h3 {
-        margin-bottom: 10px;
-        color: #2d3748;
-      }
-
-      .record-card p, .record-card ul {
-        color: #4a5568;
-        line-height: 1.6;
-      }
-
-      .record-card ul {
-        list-style-type: disc;
-        margin-left: 20px;
-      }
-
-      /* Loader */
       .loader {
         border: 6px solid #f3f3f3;
         border-top: 6px solid #2f855a; /* Forest green */
@@ -187,9 +63,12 @@
         100% { transform: rotate(360deg); }
       }
 
-      /* Error message */
       .error {
         color: #c53030;
+        margin-top: 20px;
+      }
+
+      .card {
         margin-top: 20px;
       }
 
@@ -198,30 +77,44 @@
         .container {
           padding: 20px;
         }
-
-        input[type="text"] {
-          width: 100%;
-        }
       }
-    </style>         
+    </style>
   </head>
   <body>
     <div class="container">
+      <h1 class="text-center">Domain Security Analyzer</h1>
+      <p class="text-center">Enter a domain to analyze its DNS records and email security configurations.</p>
       <div class="form-container">
-        <form id="lookup-form">
-          <label for="domain">Domain Name</label>
-          <input type="text" id="domain" name="domain" placeholder="e.g., example.com" required>
-          <button type="submit" id="lookup-button">Analyze</button>
+        <form id="lookup-form" class="form-inline justify-content-center">
+          <div class="form-group mx-sm-3 mb-2">
+            <label for="domain" class="sr-only">Domain Name</label>
+            <input type="text" class="form-control" id="domain" name="domain" placeholder="e.g., example.com" required>
+          </div>
+          <button type="submit" class="btn btn-primary mb-2" id="lookup-button">Analyze</button>
         </form>
         <div id="loading-spinner" class="loader"></div>
         <div id="error" class="error"></div>
       </div>
-      <div id="summary" class="summary-card" style="display: none;"></div>
-      <div id="domain-info" class="domain-info-card" style="display: none;"></div>
-      <div id="recommendations" class="recommendations-card" style="display: none;"></div>
-      <button id="show-details-button" style="display: none;">Show Detailed DNS Records</button>
-      <div id="results" class="results-container"></div>
+      <div id="spf-warning" class="alert alert-danger" style="display: none;"></div>
+      <div id="spf-info" class="alert alert-info" style="display: none;"></div>
+      <div id="summary" class="card" style="display: none;">
+        <div class="card-body" id="summary-content"></div>
+      </div>
+      <div id="domain-info" class="card" style="display: none;">
+        <div class="card-body" id="domain-info-content"></div>
+      </div>
+      <div id="recommendations" class="card" style="display: none;">
+        <div class="card-body" id="recommendations-content"></div>
+      </div>
+      <button id="show-details-button" class="btn btn-secondary mt-3" style="display: none;">Show Detailed DNS Records</button>
+      <div id="results" class="results-container" style="display: none;"></div>
+      <div id="contact-prompt" class="alert alert-success mt-4" role="alert" style="display: none;">
+        Need help improving your domain's email security? Email us at <a href="mailto:contact@gregjorg.com" class="alert-link">contact@gregjorg.com</a>
+      </div>
     </div>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <!-- Custom JavaScript -->
     <script>
       $(document).ready(function() {
@@ -232,11 +125,14 @@
           $("#loading-spinner").show();
           $("#error").text("");
           $("#results").empty().hide();
-          $("#summary").empty().hide();
-          $("#domain-info").empty().hide();
-          $("#recommendations").empty().hide();
+          $("#summary").hide();
+          $("#domain-info").hide();
+          $("#recommendations").hide();
           $("#show-details-button").hide();
-  
+          $("#contact-prompt").hide();
+          $("#spf-warning").hide();
+          $("#spf-info").hide();
+
           $.ajax({
             url: "/lookup",
             type: "POST",
@@ -244,37 +140,46 @@
             success: function(response) {
               $("#lookup-button").prop("disabled", false);
               $("#loading-spinner").hide();
-              
+
               if (response.error) {
                 $("#error").text(response.error);
               } else {
-                // Build the summary section (Security Score and DMARC Info at the top)
-                var summaryHtml = "<h2>Domain Security Analysis for " + response.domain + "</h2>";
-                summaryHtml += "<h3>Security Score: " + response.score + " / " + response.max_score + "</h3>";
-                summaryHtml += "<ul>";
-  
+                // Build the summary section
+                var summaryHtml = "<h3>Domain Security Analysis for <strong>" + response.domain + "</strong></h3>";
+                summaryHtml += "<h4>Security Score: <span class='badge badge-secondary'>" + response.score + " / " + response.max_score + "</span></h4>";
+                summaryHtml += "<ul class='list-group'>";
+
                 function getRecordStatusIndicator(statusText) {
                   if (statusText.includes("Not Found") || statusText.includes("Could be improved") || statusText.includes("Policy not recognized") || statusText.includes("Policy not found")) {
                     return "<span class='status-indicator status-red'></span>";
-                  } else if (statusText.includes("Found") || statusText.includes("Good") || statusText.includes("reject")) {
+                  } else if (statusText.includes("Found") || statusText.includes("Good") || statusText.includes("reject") || statusText.includes("Valid")) {
                     return "<span class='status-indicator status-green'></span>";
                   } else {
                     return "<span class='status-indicator status-yellow'></span>";
                   }
                 }
-  
-                summaryHtml += "<li>" + getRecordStatusIndicator(response.dmarc_status) + "DMARC Status: " + response.dmarc_status + "</li>";
-                summaryHtml += "<li>" + getRecordStatusIndicator(response.spf_status) + "SPF Status: " + response.spf_status + "</li>";
-                summaryHtml += "<li>" + getRecordStatusIndicator(response.dkim_status) + "DKIM Status: " + response.dkim_status + "</li>";
+
+                summaryHtml += "<li class='list-group-item'>" + getRecordStatusIndicator(response.dmarc_status) + "<strong>DMARC Status:</strong> " + response.dmarc_status + "</li>";
+                summaryHtml += "<li class='list-group-item'>" + getRecordStatusIndicator(response.spf_status) + "<strong>SPF Status:</strong> " + response.spf_status + "</li>";
+                summaryHtml += "<li class='list-group-item'>" + getRecordStatusIndicator(response.dkim_status) + "<strong>DKIM Status:</strong> " + response.dkim_status + "</li>";
                 summaryHtml += "</ul>";
-  
-                $("#summary").html(summaryHtml).fadeIn();
-  
+
+                $("#summary-content").html(summaryHtml);
+                $("#summary").fadeIn();
+
+                // Display SPF warnings
+                if (response.spf_warning) {
+                  $("#spf-warning").text(response.spf_warning).show();
+                }
+                if (response.spf_dns_lookups !== null && !response.spf_warning) {
+                  $("#spf-info").text("Your SPF record has " + response.spf_dns_lookups + " DNS lookups, which is within the allowed limit.").show();
+                }
+
                 // Build the domain information section
-                var domainInfoHtml = "<h3>Domain Information</h3>";
+                var domainInfoHtml = "<h5>Domain Information</h5>";
                 domainInfoHtml += "<p>" + response.expiration_info + "</p>";
                 domainInfoHtml += "<p>" + response.registrar_info + "</p>";
-  
+
                 // Website Accessibility and SSL Validation
                 function getStatusIndicator(statusText) {
                   if (statusText === "good") {
@@ -285,76 +190,85 @@
                     return "<span class='status-indicator status-red'></span>";
                   }
                 }
-  
+
                 if (response.website_status.accessible) {
                   domainInfoHtml += "<p>" + getStatusIndicator("good") + "<strong>Website Accessible:</strong> Yes (Status Code: " + response.website_status.status_code + ")</p>";
                 } else {
                   domainInfoHtml += "<p>" + getStatusIndicator("bad") + "<strong>Website Accessible:</strong> No (" + response.website_status.error + ")</p>";
                 }
-  
+
                 if (response.website_status.ssl_valid) {
                   domainInfoHtml += "<p>" + getStatusIndicator("good") + "<strong>SSL Certificate Valid:</strong> Yes</p>";
                 } else {
                   domainInfoHtml += "<p>" + getStatusIndicator("bad") + "<strong>SSL Certificate Valid:</strong> No</p>";
                 }
-  
+
                 // Display Email Security Tools
                 if (response.email_security_tools.length > 0) {
                   domainInfoHtml += "<p><strong>Email Security Tools Detected:</strong> " + response.email_security_tools.join(", ") + "</p>";
                 }
-  
+
                 if (response.unknown_mx_providers.length > 0) {
                   domainInfoHtml += "<p><strong>Unknown MX Providers:</strong> " + response.unknown_mx_providers.join(", ") + "</p>";
                   domainInfoHtml += "<p>These MX records do not match known providers. Consider investigating them further.</p>";
                 }
-  
+
                 if (response.email_security_tools.length === 0 && response.unknown_mx_providers.length === 0) {
                   domainInfoHtml += "<p><strong>Email Security Tools Detected:</strong> None found. It's unclear if an email security provider is in use.</p>";
                 }
-  
-                $("#domain-info").html(domainInfoHtml).fadeIn();
-  
+
+                $("#domain-info-content").html(domainInfoHtml);
+                $("#domain-info").fadeIn();
+
                 // Build the recommendations section
-                var recommendations = "<h3>Recommendations</h3><ul>";
-  
+                var recommendations = "<h5>Recommendations</h5><ul>";
+
                 if (response.dmarc_status.includes("Could be improved") || response.dmarc_status.includes("Not Found")) {
                   recommendations += "<li>Consider implementing or strengthening DMARC policies to protect against email spoofing.</li>";
                 }
-  
+
                 if (response.spf_status === "SPF Record Not Found") {
                   recommendations += "<li>Add an SPF record to specify authorized email servers.</li>";
                 }
-  
-                if (response.dkim_status === "DKIM Record Not Found") {
+
+                if (response.spf_warning) {
+                  recommendations += "<li>" + response.spf_warning + " Consider reducing DNS lookups or using SPF flattening.</li>";
+                }
+
+                if (response.dkim_status.includes("Not Found")) {
                   recommendations += "<li>Implement DKIM to verify email authenticity.</li>";
                 }
-  
+
                 if (response.email_security_tools.length === 0 && response.unknown_mx_providers.length > 0) {
                   recommendations += "<li>The MX records do not match known email security providers. Consider investigating these MX records: " + response.unknown_mx_providers.join(", ") + ".</li>";
                 } else if (response.email_security_tools.length === 0 && response.unknown_mx_providers.length === 0) {
                   recommendations += "<li>It's unclear if an email security provider is in use. Consider verifying this and exploring email security solutions if not in place.</li>";
                 }
-  
+
                 if (!response.website_status.accessible) {
                   recommendations += "<li>Website is not accessible. Investigate the issue to ensure your site is reachable.</li>";
                 }
-  
+
                 if (!response.website_status.ssl_valid) {
                   recommendations += "<li>SSL certificate is not valid. Consider renewing or configuring SSL to secure your site.</li>";
                 }
-  
+
                 if (response.highlighted_info.includes("Discrepancies Detected")) {
                   recommendations += "<li>DNS discrepancies detected between resolvers. Verify your DNS configurations and allow time for changes to propagate.</li>";
                 }
-  
+
                 recommendations += "</ul>";
-                $("#recommendations").html(recommendations).fadeIn();
-  
+                $("#recommendations-content").html(recommendations);
+                $("#recommendations").fadeIn();
+
                 // Show the "Show Details" button
                 $("#show-details-button").fadeIn();
-  
+
+                // Show contact prompt
+                $("#contact-prompt").fadeIn();
+
                 // Prepare the detailed results section but keep it hidden
-                var resultsHtml = "<h2>Detailed DNS Records for " + response.domain + "</h2>";
+                var resultsHtml = "<h4>Detailed DNS Records for " + response.domain + "</h4>";
                 $.each(response.results, function(recordType, recordData) {
                   var recordStatusIndicator = "";
                   if (recordData.cloudflare && recordData.cloudflare.length > 0) {
@@ -362,46 +276,47 @@
                   } else {
                     recordStatusIndicator = "<span class='status-indicator status-red'></span>";
                   }
-                  
-                  resultsHtml += "<div class='record-card'>";
-                  resultsHtml += "<h3>" + recordStatusIndicator + recordType + " Records</h3>";
-                  
+
+                  resultsHtml += "<div class='card mt-3'>";
+                  resultsHtml += "<div class='card-body'>";
+                  resultsHtml += "<h5>" + recordStatusIndicator + recordType + " Records</h5>";
+
                   if (recordData.cloudflare && recordData.cloudflare.length > 0) {
                     resultsHtml += "<p><strong>Cloudflare DNS Results:</strong></p>";
-                    resultsHtml += "<ul>";
+                    resultsHtml += "<ul class='list-group'>";
                     $.each(recordData.cloudflare, function(index, value) {
-                      resultsHtml += "<li>" + value + "</li>";
+                      resultsHtml += "<li class='list-group-item'>" + value + "</li>";
                     });
                     resultsHtml += "</ul>";
                   } else {
                     resultsHtml += "<p>No " + recordType + " records found on Cloudflare DNS.</p>";
                   }
-                  
+
                   if (recordData.google && recordData.google.length > 0) {
                     resultsHtml += "<p><strong>Google DNS Results (Differing):</strong></p>";
-                    resultsHtml += "<ul>";
+                    resultsHtml += "<ul class='list-group'>";
                     $.each(recordData.google, function(index, value) {
-                      resultsHtml += "<li>" + value + "</li>";
+                      resultsHtml += "<li class='list-group-item'>" + value + "</li>";
                     });
                     resultsHtml += "</ul>";
                   }
-    
+
                   if (recordData.verification) {
-                    resultsHtml += "<p style='color: blue;'><strong>Verification:</strong> " + recordData.verification + "</p>";
+                    resultsHtml += "<p class='text-primary'><strong>Verification:</strong> " + recordData.verification + "</p>";
                   }
-    
+
                   if (recordData.discrepancies) {
-                    resultsHtml += "<p style='color: red;'><strong>Discrepancies Detected:</strong> " + recordData.discrepancies.join(", ") + "</p>";
+                    resultsHtml += "<p class='text-danger'><strong>Discrepancies Detected:</strong> " + recordData.discrepancies.join(", ") + "</p>";
                     resultsHtml += "<p>This may be due to recent DNS changes or misconfigurations. Consider checking your DNS settings.</p>";
                   }
-    
+
                   if (recordData.explanation) {
                     resultsHtml += "<p><em>Explanation:</em><br>" + recordData.explanation.replace(/\n/g, "<br>") + "</p>";
                   }
-    
-                  resultsHtml += "</div>";
+
+                  resultsHtml += "</div></div>";
                 });
-    
+
                 $("#results").html(resultsHtml);
               }
             },
@@ -413,7 +328,7 @@
             }
           });
         });
-  
+
         // Toggle detailed results display
         $("#show-details-button").on("click", function() {
           if ($("#results").is(":visible")) {
@@ -425,6 +340,6 @@
           }
         });
       });
-    </script> 
+    </script>
   </body>
 </html>
