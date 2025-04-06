@@ -1,0 +1,4 @@
+name = "dmarc-checker"
+type = "javascript"
+account_id = "58b3a05fcc830a9ec91e075001af57c9"
+workers_dev = true
